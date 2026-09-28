@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>迷你世界 · 道具展示库</title>
+    <style>
+        :root {
+            --bg: #f5f1e8;
+            --card-bg: #ffffff;
+            --text: #2d3e4f;
+            --subtext: #6b7b8c;
+            --accent: #c48b3a;
+            --accent-soft: #f3e5cf;
+            --border: #e6dccb;
+            --shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+            --radius: 16px;
+            --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+            --sidebar-width: 280px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            font-family: var(--font);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 1rem 2rem;
+        }
+        .window-container {
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+            padding: 1.5rem 1.5rem 2rem;
+            border: 1px solid rgba(230,220,203,0.7);
+        }
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        .window-title { font-size: 1.8rem; font-weight: 650; color: #3f3429; }
+        .three-dots-btn {
+            background: rgba(255,255,255,0.7);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+            display: flex;
+            gap: 4px;
+            transition: 0.2s;
+        }
+        .three-dots-btn:hover { background: #fff; border-color: var(--accent); }
+        .dot { width: 6px; height: 6px; background: #8b7a62; border-radius: 50%; }
+        .sidebar-overlay {
+            position: fixed;
+            top: 0; right: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.15);
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.25s;
+        }
+        .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+        .sidebar {
+            position: fixed;
+            top: 0; right: 0;
+            width: var(--sidebar-width);
+            max-width: 85vw;
+            height: 100%;
+            background: #fdfbf7;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.08);
+            z-index: 100;
+            transform: translateX(100%);
+            transition: 0.3s cubic-bezier(0.23,1,0.32,1);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #e2d8c8;
+        }
+        .sidebar.active { transform: translateX(0); }
+        .sidebar-header { padding: 1.5rem 1.2rem 1rem; border-bottom: 1px solid #eae0d2; }
+        .sidebar-header h3 { font-size: 1.2rem; color: #4e3e2b; margin-bottom: 1rem; }
+        .search-box { position: relative; margin-bottom: 0.5rem; }
+        .search-box input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.4rem;
+            border-radius: 30px;
+            border: 1px solid #ddd0bc;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .search-icon { position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%); color: #b6a58c; }
+        .category-list { flex: 1; overflow-y: auto; padding: 1rem 1.2rem; }
+        .category-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #4d3e2c;
+            margin-bottom: 0.3rem;
+        }
+        .category-item:hover { background: #f3eadb; }
+        .category-item.active { background: #f0e1cc; color: #6b4e26; }
+        .category-item span:last-child { font-size: 0.8rem; background: #ebe2d3; padding: 0.2rem 0.7rem; border-radius: 20px; }
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .item-card {
+            background: rgba(255,255,255,0.85);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            padding: 0.9rem 0.4rem 0.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: 0.2s;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+        .item-card:hover { transform: translateY(-4px); border-color: var(--accent); background: #fff; }
+        .item-icon {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 0.6rem;
+            background: #f2eadb;
+            border-radius: 16px;
+            padding: 4px;
+        }
+        .item-name { font-weight: 600; font-size: 0.9rem; color: #2c3e4a; margin-bottom: 0.3rem; }
+        .item-id { font-size: 0.7rem; background: #f4ede4; color: #776b5b; padding: 0.2rem 0.6rem; border-radius: 12px; font-family: monospace; }
+        .series-block { margin-bottom: 1.8rem; }
+        .series-annotation {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: var(--accent-soft);
+            color: #7a5d36;
+            padding: 0.2rem 0.8rem;
+            border-radius: 16px;
+            margin-bottom: 0.5rem;
+            border: 1px solid rgba(196,139,58,0.3);
+        }
+        .series-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            padding-left: 0.3rem;
+            border-left: 5px solid var(--accent);
+            color: #3c3a36;
+        }
+    </style>
+</head>
+<body>
+
+<div class="window-container">
+    <div class="top-bar">
+        <div class="window-title">迷你世界道具库</div>
+        <button class="three-dots-btn" id="threeDotsBtn">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </button>
+    </div>
+    <div id="seriesContainer"></div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3>🔍 道具分类</h3>
+        <div class="search-box">
+            <span class="search-icon">🔎</span>
+            <input type="text" id="searchInput" placeholder="搜索道具名称或ID...">
+        </div>
+    </div>
+    <div class="category-list" id="categoryList"></div>
+</aside>
+
+<script>
+    (function() {
+        // ==================== 数据区：每个分类一个 rawData ====================
+        const rawData1 = `
+            "分类","装备"
+            "皮头盔","12201"
+            "皮胸甲","12202"
+            "皮护腿","12203"
+            "皮靴子","12204"
+            "黄铜头盔","12216"
+            "黄铜胸甲","12217"
+            "黄铜护腿","12218"
+            "黄铜靴子","12219"
+            "铸铁头盔","12221"
+            "铸铁胸甲","12222"
+            "铸铁护腿","12223"
+            "铸铁靴子","12224"
+            "钛金头盔","12231"
+            "钛金胸甲","12232"
+            "钛金护腿","12233"
+            "钛金靴子","12234"
+            "钨金头盔","12241"
+            "钨金胸甲","12242"
+            "钨金护腿","12243"
+            "钨金靴子","12244"
+            "防寒头盔","12312"
+            "防寒胸甲","12313"
+            "防寒护腿","12314"
+            "防寒靴","12315"
+            "铝合金头盔","12764"
+            "铝合金胸甲","12765"
+            "铝合金护腿","12766"
+            "铝合金靴子","12767"
+            "钴合金头盔","12768"
+            "钴合金胸甲","12769"
+            "钴合金护腿","12770"
+            "钴合金靴子","12771"
+            "皮披风","12205"
+            "炽炎披风","12206"
+            "钨金披风","12207"
+            "云母披风","12208"
+            "精铝披风","12209"
+            "防沙披风","11639"
+            "熔岩披风","12210"
+            "防寒披风","12279"
+            "潜水面罩","11642"
+            "潜水服","11643"
+            "潜水脚蹼","11644"
+            "高级潜水面罩","11645"
+            "高级潜水服","11646"
+            "高级潜水脚蹼","11647"
+            "氧气背包","12275"
+            "氧气面罩","12276"
+            "防火背包","12277"
+            "花冠","11228"
+            "幸运花冠","11650"
+            "野人面具","12246"
+            "蛇神之翼","11591"
+            "冲天炮","12822"
+            "陨魔假面","11232"
+            "虚空瓜帽-？","200413"
+            "虚空瓜帽-坏","200414"
+            "虚空瓜帽-呆","200415"
+            "虚空瓜帽-乐","200416"
+            "火箭背包","20094"
+        `;
+
+        const rawData2 = `
+            "分类","黄铜防具","🟡"
+            "黄铜头盔","12216"
+            "黄铜胸甲","12217"
+            "黄铜护腿","12218"
+            "黄铜靴子","12219"
+        `;
+
+        // 以后新增分类照着加 rawData3、rawData4……
+        // const rawData3 = `
+        //     "分类","开发者道具","🛠️"
+        //     "开发者之剑","99901"
+        //     "开发者护符","99902"
+        // `;
+
+        const allRawData = [rawData1, rawData2];
+
+        function parseRawData(raw) {
+            const lines = raw.trim().split('\n').map(line => line.trim()).filter(line => line);
+            let category = null;
+            const items = [];
+            lines.forEach(line => {
+                const match = line.match(/"([^"]*)","([^"]*)",?"?([^"]*)"?/);
+                if (match) {
+                    if (match[1] === '分类') {
+                        category = { name: match[2], icon: match[3] || '📦' };
+                    } else {
+                        items.push({ name: match[1], id: match[2], category: category.name, categoryIcon: category.icon });
+                    }
+                }
+            });
+            return items;
+        }
+
+        let itemDatabase = [];
+        allRawData.forEach(raw => {
+            itemDatabase = itemDatabase.concat(parseRawData(raw));
+        });
+
+        const seriesContainer = document.getElementById('seriesContainer');
+        const categoryList = document.getElementById('categoryList');
+        const searchInput = document.getElementById('searchInput');
+        const threeDotsBtn = document.getElementById('threeDotsBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function renderSeries(items) {
+            const grouped = {};
+            items.forEach(item => {
+                if (!grouped[item.category]) grouped[item.category] = [];
+                grouped[item.category].push(item);
+            });
+            let html = '';
+            for (const [cat, catItems] of Object.entries(grouped)) {
+                const icon = catItems[0].categoryIcon || '📦';
+                html += `
+                    <div class="series-block" data-category="${cat}">
+                        <div class="series-annotation">📦 分类 · ${cat}</div>
+                        <div class="series-title">${icon} ${cat} <span style="font-size:0.8rem; margin-left:8px;">(${catItems.length}件)</span></div>
+                        <div class="items-grid">
+                            ${catItems.map(item => `
+                                <div class="item-card" data-id="${item.id}" data-name="${item.name}">
+                                    <img class="item-icon" src="https://qiugf.cn/kfz/cxid/ico/${item.id}.png" alt="${item.name}" loading="lazy">
+                                    <div class="item-name">${item.name}</div>
+                                    <div class="item-id">#${item.id}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            seriesContainer.innerHTML = html;
+        }
+
+        function renderCategories(items) {
+            const grouped = {};
+            items.forEach(item => {
+                if (!grouped[item.category]) grouped[item.category] = [];
+                grouped[item.category].push(item);
+            });
+            let html = `<div class="category-item active" data-category="all"><span>📋 全部道具</span><span>${items.length}</span></div>`;
+            for (const [cat, catItems] of Object.entries(grouped)) {
+                const icon = catItems[0].categoryIcon || '📦';
+                html += `<div class="category-item" data-category="${cat}"><span>${icon} ${cat}</span><span>${catItems.length}</span></div>`;
+            }
+            categoryList.innerHTML = html;
+            attachCategoryEvents();
+        }
+
+        function filterByCategory(category) {
+            document.querySelectorAll('.series-block').forEach(block => {
+                block.style.display = (category === 'all' || block.getAttribute('data-category') === category) ? 'block' : 'none';
+            });
+        }
+
+        function filterBySearch(keyword) {
+            document.querySelectorAll('.item-card').forEach(card => {
+                const name = card.getAttribute('data-name').toLowerCase();
+                const id = card.getAttribute('data-id');
+                card.style.display = (name.includes(keyword) || id.includes(keyword)) ? 'flex' : 'none';
+            });
+            document.querySelectorAll('.series-block').forEach(block => {
+                const visible = Array.from(block.querySelectorAll('.item-card')).some(card => card.style.display !== 'none');
+                block.style.display = visible ? 'block' : 'none';
+            });
+        }
+
+        function attachCategoryEvents() {
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    filterByCategory(this.getAttribute('data-category'));
+                    if (window.innerWidth <= 750) {
+                        sidebar.classList.remove('active');
+                        sidebarOverlay.classList.remove('active');
+                    }
+                });
+            });
+        }
+
+        threeDotsBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        });
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        });
+        searchInput.addEventListener('input', function() {
+            const keyword = this.value.trim().toLowerCase();
+            if (keyword === '') {
+                document.querySelectorAll('.item-card').forEach(card => card.style.display = 'flex');
+                document.querySelectorAll('.series-block').forEach(block => block.style.display = 'block');
+            } else {
+                filterBySearch(keyword);
+            }
+        });
+
+        renderSeries(itemDatabase);
+        renderCategories(itemDatabase);
+    })();
+</script>
+</body>
+</html>
