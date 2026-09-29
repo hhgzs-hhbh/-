@@ -29,7 +29,7 @@
   best = Number(localStorage.getItem(BEST_KEY) || 0);
   bestEl.textContent = best;
 
-  // ===== 工具函数 =====
+  // ===== 工具 =====
   const isOpposite = (a, b) => a.x + b.x === 0 && a.y + b.y === 0;
 
   function randomFood() {
@@ -64,7 +64,7 @@
     btnPause.disabled = true;
     btnPause.textContent = '暂停';
 
-    showOverlay('贪吃蛇', '方向键 / WASD 控制，手机点方向键', '开始游戏');
+    showOverlay('贪吃蛇', '方向键 / WASD / 屏幕按钮控制', '开始游戏');
     draw();
   }
 
@@ -80,7 +80,7 @@
     overlay.classList.add('hide');
   }
 
-  // ===== 游戏循环 =====
+  // ===== 循环 =====
   function startLoop() {
     stopLoop();
     timer = setInterval(step, speed);
@@ -226,11 +226,11 @@
     ctx.closePath();
   }
 
-  // ===== 转向 =====
+  // ===== 转向（按钮 + 键盘 + 滑动 共用）=====
   function turn(nx, ny) {
-    if (!running || paused) return;
+    if (paused) return;                 // 暂停时不能转向
     const nd = { x: nx, y: ny };
-    if (isOpposite(nd, dir)) return;
+    if (isOpposite(nd, nextDir)) return; // 不能 180° 掉头
     nextDir = nd;
   }
 
@@ -254,7 +254,7 @@
     }
   });
 
-  // ===== 方向键按钮 =====
+  // ===== 屏幕方向键按钮 =====
   const dirMap = {
     up:    [0, -1],
     down:  [0,  1],
@@ -263,11 +263,39 @@
   };
 
   document.querySelectorAll('.dpad-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    const handler = (e) => {
+      e.preventDefault();
       const d = dirMap[btn.dataset.dir];
       if (d) turn(d[0], d[1]);
-    });
+    };
+    btn.addEventListener('click', handler);
+    btn.addEventListener('touchstart', handler, { passive: false });
   });
+
+  // ===== 滑动（保留，且和按钮不冲突）=====
+  let touchStart = null;
+
+  canvas.addEventListener('touchstart', (e) => {
+    const t = e.changedTouches[0];
+    touchStart = { x: t.clientX, y: t.clientY };
+  }, { passive: true });
+
+  canvas.addEventListener('touchend', (e) => {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.x;
+    const dy = t.clientY - touchStart.y;
+    const TH = 24;
+    touchStart = null;
+
+    if (Math.abs(dx) < TH && Math.abs(dy) < TH) return;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      turn(dx > 0 ? 1 : -1, 0);
+    } else {
+      turn(0, dy > 0 ? 1 : -1);
+    }
+  }, { passive: true });
 
   // ===== 按钮逻辑 =====
   function startGame() {
@@ -277,6 +305,7 @@
     paused = false;
     btnPause.disabled = false;
     btnPause.textContent = '暂停';
+    dir = { ...nextDir };
     startLoop();
   }
 
