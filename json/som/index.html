@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>API</title>
+</head>
+<body>
+    <pre id="output"></pre>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        let clientSr = urlParams.get('sr') || "";
+        let lx = urlParams.get('lx') || "";
+
+        const urlOjs = "https://hhgzs-hhbh.github.io/-/wiki/dj/all.json";
+        const urlOjb = "https://hhgzs-hhbh.github.io/-/wiki/dj/wiki.json";
+
+        let targetJsonUrl = "";
+        if (lx === "ojs") {
+            targetJsonUrl = urlOjs;
+        } else if (lx === "ojb") {
+            targetJsonUrl = urlOjb;
+        } else {
+            document.getElementById('output').textContent = `{"retcode": 400, "message": "非法访问"}`;
+            throw new Error("Invalid lx"); // 强制停止
+        }
+
+        // 设置一个 10 秒的超时防卡死机制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        fetch(targetJsonUrl, { signal: controller.signal })
+            .then(res => {
+                if(!res.ok) throw new Error(" 200 user=" + res.status);
+                return res.text();
+            })
+            .then(text => {
+                clearTimeout(timeoutId); // 成功拿到数据，取消超时
+                
+                let cleanText = text;
+                let serverSr = "";
+                let rawData = null;
+
+                // 兼容处理第一行
+                const lines = text.split('\n');
+                if (lines.length > 1) {
+                    try {
+                        const metaInfo = JSON.parse(lines[0].trim());
+                        serverSr = metaInfo.sr || ""; 
+                    } catch(e) {}
+                    
+                    const startIdx = text.indexOf('{\n');
+                    if (startIdx !== -1) {
+                        cleanText = text.substring(startIdx);
+                    }
+                }
+
+                try {
+                    rawData = JSON.parse(cleanText);
+                } catch (e) {
+                    document.getElementById('output').textContent = `{"retcode": 500, "message": "非法访问"}`;
+                    return;
+                }
+
+                const nowStr = new Date().toISOString();
+                
+                // 强转字符串比对，避免格式问题卡死
+                if (clientSr === "" || String(clientSr) < String(serverSr)) {
+                    document.getElementById('output').textContent = JSON.stringify({
+                        retcode: 0,
+                        message: "NO",
+                        sr: "非法访问",
+                        server_time: nowStr
+                    });
+                } else {
+                    const formattedData = JSON.stringify(rawData, null, 4); 
+                    document.getElementById('output').textContent = `{"retcode": 0, "message": "OK", "sr": "${nowStr}", "data": ${formattedData}}`;
+                }
+            })
+            .catch(err => {
+                clearTimeout(timeoutId);
+                // 如果是超时报错
+                if (err.name === 'AbortError') {
+                    document.getElementById('output').textContent = `{"retcode": 500, "message": "请求超时"}`;
+                } else {
+                    document.getElementById('output').textContent = `{"retcode": 500, "message": "请求失败: ${err.message}"}`;
+                }
+            });
+    </script>
+</body>
+</html>
