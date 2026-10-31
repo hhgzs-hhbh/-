@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>迷你世界 · 道具展示库</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="window-container">
+  <div class="top-bar">
+    <div class="window-title">迷你世界道具库</div>
+    <button class="three-dots-btn" id="threeDotsBtn" aria-label="打开分类">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </button>
+  </div>
+  <div id="seriesContainer">
+    <div class="loading">正在加载图鉴数据…</div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>©2026 憨憨工作室保留所有权利</p>
+  <p>官网 <a href="https://hhgzs-hhbh.github.io/-/" target="_blank" rel="noopener noreferrer">https://hhgzs-hhbh.github.io/-/</a></p>
+</footer>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h3>🔍 道具分类</h3>
+    <div class="search-box">
+      <span class="search-icon">🔎</span>
+      <input type="text" id="searchInput" placeholder="搜索名称或ID...">
+    </div>
+  </div>
+  <div class="category-list" id="categoryList"></div>
+</aside>
+
+<!-- 详情弹窗 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-content" id="modalContent">
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <!-- 名称与ID添加了点击复制事件 -->
+    <h2 class="modal-title" id="modalTitle" title="点击复制名称">道具名称</h2>
+    <div class="modal-id" id="modalId" title="点击复制ID">#ID</div>
+    
+    <div class="modal-stats" id="modalStats"></div>
+
+    <div class="modal-desc-box">
+      <div class="desc-label">描述</div>
+      <div class="desc-text" id="modalDesc">暂无描述</div>
+    </div>
+  </div>
+</div>
+
+<!-- 全局复制提示 -->
+<div class="toast" id="toast">已复制到剪贴板</div>
+
+<script src="app.js"></script>
+</body>
+</html>
